@@ -170,6 +170,76 @@ main {
   padding: 90px 0;
 }
 
+/* Floating hero logo */
+.hero-logo {
+  display: block;
+  width: 320px;
+  height: 320px;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  align-self: center;
+  margin-bottom: 36px;
+  filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.4));
+  animation: hero-float 3s ease-in-out infinite;
+}
+
+/* Hero logo floating animation */
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-18px);
+  }
+}
+
+/* Floating hero logo hover effect */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-logo:hover {
+    animation:
+      hero-float 3s ease-in-out infinite,
+      hero-glitch 0.4s steps(2, end);
+  }
+}
+
+/* Hero logo glitch animation */
+@keyframes hero-glitch {
+  0%,
+  100% {
+    translate: 0 0;
+    filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.4));
+  }
+
+  20% {
+    translate: -5px 2px;
+    filter: drop-shadow(5px 0 6px #00ff88);
+  }
+
+  40% {
+    translate: 5px -3px;
+    filter: drop-shadow(-5px 0 6px var(--accent));
+  }
+
+  60% {
+    translate: -4px -2px;
+    filter: drop-shadow(4px 0 8px #00ff88);
+  }
+
+  80% {
+    translate: 4px 3px;
+    filter: drop-shadow(-4px 0 8px var(--accent));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-logo {
+    animation: none;
+  }
+}
+
 .eyebrow {
   color: var(--accent);
   font-size: 0.8rem;
@@ -279,7 +349,7 @@ main {
 }
 
 .card-title {
-  color: var(--text) !important;
+  color: var(--text);
   font-weight: 600;
 }
 
