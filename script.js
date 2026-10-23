@@ -39,8 +39,67 @@ if (navBuilder && navLogo) {
     "sprites/jump_06.png",
   ];
 
+  const runFrames = [
+    "sprites/run_01.png",
+    "sprites/run_02.png",
+    "sprites/run_03.png",
+    "sprites/run_04.png",
+    "sprites/run_05.png",
+    "sprites/run_06.png",
+    "sprites/run_07.png",
+    "sprites/run_08.png",
+  ];
+
+  const aboutLink = document.querySelector('.nav-links a[href="#about"]');
+
+  const runSpeed = 15;
+  const runFrameDelay = 60;
+
   const frameDelay = 90;
   let jumpFrameIndex = 0;
+
+  /**
+   * Runs the character toward the About link and back
+   * to its starting position.
+   */
+  function animateRun() {
+    if (!aboutLink) {
+      return;
+    }
+
+    const navRect = navBuilder.parentElement.getBoundingClientRect();
+    const aboutRect = aboutLink.getBoundingClientRect();
+
+    const startPosition = Number.parseFloat(
+      navBuilder.dataset.position || "65",
+    );
+
+    const destination = aboutRect.left - navRect.left - 48;
+
+    let position = startPosition;
+    let direction = 1;
+    let frameIndex = 0;
+
+    const runTimer = setInterval(() => {
+      position += runSpeed * direction;
+
+      if (position >= destination) {
+        position = destination;
+        direction = -1;
+      }
+
+      if (position <= startPosition && direction === -1) {
+        position = startPosition;
+        clearInterval(runTimer);
+      }
+
+      navBuilder.src = runFrames[frameIndex];
+      navBuilder.style.transform = `translateX(${position}px) scaleX(${direction})`;
+      navBuilder.dataset.position = position;
+
+      frameIndex = (frameIndex + 1) % runFrames.length;
+    }, runFrameDelay);
+  }
 
   /**
    * Displays the next jumping frame as the character
@@ -48,6 +107,7 @@ if (navBuilder && navLogo) {
    */
   function animateJump() {
     if (jumpFrameIndex >= jumpFrames.length) {
+      animateRun();
       return;
     }
 
