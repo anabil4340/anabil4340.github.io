@@ -117,8 +117,74 @@ if (navBuilder && navLogo) {
         clearInterval(throwTimer);
 
         selectedNavLink.style.color = "transparent";
+        animateFlyingText();
       }
     }, 150);
+  }
+
+  /**
+   * Animates the selected navigation text toward its page section
+   * and restores the original navigation link afterward.
+   */
+  function animateFlyingText() {
+    if (!selectedNavLink) {
+      return;
+    }
+
+    const link = selectedNavLink;
+    const section = document.querySelector(link.getAttribute("href"));
+
+    if (!section) {
+      link.style.color = "";
+      return;
+    }
+
+    const linkRect = link.getBoundingClientRect();
+    const sectionRect = section.getBoundingClientRect();
+
+    const flyingText = document.createElement("span");
+    flyingText.textContent = link.textContent.trim();
+
+    Object.assign(flyingText.style, {
+      position: "fixed",
+      left: `${linkRect.left}px`,
+      top: `${linkRect.top}px`,
+      font: window.getComputedStyle(link).font,
+      color: "#a855f7",
+      whiteSpace: "nowrap",
+      pointerEvents: "none",
+      zIndex: "1000",
+    });
+
+    document.body.appendChild(flyingText);
+
+    const targetX = sectionRect.left + sectionRect.width / 2;
+    const targetY = Math.max(100, sectionRect.top + 100);
+
+    const animation = flyingText.animate(
+      [
+        {
+          transform: "translate(0, 0) rotate(0deg)",
+          opacity: 1,
+        },
+        {
+          transform: `translate(${targetX - linkRect.left}px, ${
+            targetY - linkRect.top
+          }px) rotate(360deg)`,
+          opacity: 0,
+        },
+      ],
+      {
+        duration: 900,
+        easing: "ease-in-out",
+        fill: "forwards",
+      },
+    );
+
+    animation.addEventListener("finish", () => {
+      flyingText.remove();
+      link.style.color = "";
+    });
   }
 
   /**
