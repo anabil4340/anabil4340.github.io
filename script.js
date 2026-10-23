@@ -50,9 +50,20 @@ if (navBuilder && navLogo) {
     "sprites/run_08.png",
   ];
 
+  //Grab Frames
   const grabFrames = ["sprites/grab_01.png", "sprites/grab_02.png"];
 
+  //Throw Frames
   const throwFrames = ["sprites/throw_01.png", "sprites/throw_02.png"];
+
+  //Catch Frames
+  const catchFrames = [
+    "sprites/catch_01.png",
+    "sprites/catch_02.png",
+    "sprites/catch_03.png",
+    "sprites/catch_04.png",
+    "sprites/catch_05.png",
+  ];
 
   const aboutLink = document.querySelector('.nav-links a[href="#about"]');
 
@@ -184,7 +195,26 @@ if (navBuilder && navLogo) {
     animation.addEventListener("finish", () => {
       flyingText.remove();
       link.style.color = "";
+      animateCatch();
     });
+  }
+
+  /**
+   * Plays the character's catching animation after
+   * the navigation text reaches its destination.
+   */
+  function animateCatch() {
+    let frameIndex = 0;
+
+    const catchTimer = setInterval(() => {
+      navBuilder.src = catchFrames[frameIndex];
+
+      frameIndex++;
+
+      if (frameIndex >= catchFrames.length) {
+        clearInterval(catchTimer);
+      }
+    }, 120);
   }
 
   /**
