@@ -50,6 +50,8 @@ if (navBuilder && navLogo) {
     "sprites/run_08.png",
   ];
 
+  const grabFrames = ["sprites/grab_01.png", "sprites/grab_02.png"];
+
   const aboutLink = document.querySelector('.nav-links a[href="#about"]');
 
   const runSpeed = 15;
@@ -73,6 +75,24 @@ if (navBuilder && navLogo) {
       selectedNavLink = link;
     });
   });
+
+  /**
+   * Plays the grabbing animation when the character
+   * reaches a selected navigation link.
+   */
+  function animateGrab() {
+    let frameIndex = 0;
+
+    const grabTimer = setInterval(() => {
+      navBuilder.src = grabFrames[frameIndex];
+
+      frameIndex++;
+
+      if (frameIndex >= grabFrames.length) {
+        clearInterval(grabTimer);
+      }
+    }, 150);
+  }
 
   /**
    * Runs the character toward the selected navigation link.
@@ -110,6 +130,7 @@ if (navBuilder && navLogo) {
 
       if (position === destination) {
         clearInterval(navigationTimer);
+        animateGrab();
       }
     }, runFrameDelay);
   }
