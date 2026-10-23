@@ -72,10 +72,64 @@ header {
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   color: var(--text);
   font-size: 1.2rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+/* Navigation logo image */
+#mascot-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition:
+    transform 0.3s ease,
+    filter 0.3s ease;
+}
+
+/* Logo hover effect */
+.logo:hover #mascot-logo {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 10px var(--accent));
+}
+
+/* Logo glitch animation */
+@keyframes logo-glitch {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.1);
+    filter: drop-shadow(0 0 10px var(--accent));
+  }
+
+  20% {
+    transform: translate(-2px, 1px) scale(1.1);
+    filter: drop-shadow(3px 0 4px #00ff88);
+  }
+
+  40% {
+    transform: translate(2px, -1px) scale(1.1);
+    filter: drop-shadow(-3px 0 4px var(--accent));
+  }
+
+  60% {
+    transform: translate(-1px, -2px) scale(1.1);
+  }
+
+  80% {
+    transform: translate(1px, 2px) scale(1.1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .logo:hover #mascot-logo {
+    animation: logo-glitch 0.4s steps(2, end);
+  }
 }
 
 .logo span {
