@@ -240,8 +240,19 @@ main {
   align-items: flex-start;
 }
 
+/* Adds spacing above links in project cards */
 .project-card a {
   margin-top: 12px;
+}
+
+/* Project screenshot styling*/
+.project-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 12px 0 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 /* Contact section text wrapping */
