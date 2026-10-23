@@ -61,6 +61,7 @@ if (navBuilder && navLogo) {
 
   let jumpFrameIndex = 0;
   let navigationRequested = false;
+  let selectedNavLink = null;
 
   /**
    * Detects navigation clicks and requests an interruption
@@ -69,8 +70,49 @@ if (navBuilder && navLogo) {
   document.querySelectorAll(".nav-links a").forEach((link) => {
     link.addEventListener("click", () => {
       navigationRequested = true;
+      selectedNavLink = link;
     });
   });
+
+  /**
+   * Runs the character toward the selected navigation link.
+   *
+   * @param {HTMLElement} link - The navigation link that was clicked.
+   */
+  function runToNavLink(link) {
+    const navRect = navBuilder.parentElement.getBoundingClientRect();
+    const linkRect = link.getBoundingClientRect();
+
+    const destination =
+      linkRect.left - navRect.left - navBuilder.offsetWidth + 10;
+
+    let position = Number.parseFloat(
+      navBuilder.dataset.position ||
+        String(
+          navLogo.getBoundingClientRect().left - navRect.left + jumpDistance,
+        ),
+    );
+
+    let frameIndex = 0;
+
+    const navigationTimer = setInterval(() => {
+      const direction = destination >= position ? 1 : -1;
+
+      position +=
+        Math.min(runSpeed, Math.abs(destination - position)) * direction;
+
+      navBuilder.src = runFrames[frameIndex];
+      navBuilder.style.transform = `translateX(${position}px) scaleX(${direction})`;
+
+      navBuilder.dataset.position = position;
+
+      frameIndex = (frameIndex + 1) % runFrames.length;
+
+      if (position === destination) {
+        clearInterval(navigationTimer);
+      }
+    }, runFrameDelay);
+  }
 
   /**
    * Runs the character toward the About link and back
@@ -95,6 +137,12 @@ if (navBuilder && navLogo) {
     const runTimer = setInterval(() => {
       if (navigationRequested) {
         clearInterval(runTimer);
+        navigationRequested = false;
+
+        if (selectedNavLink) {
+          runToNavLink(selectedNavLink);
+        }
+
         return;
       }
 
