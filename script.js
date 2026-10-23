@@ -56,6 +56,9 @@ if (navBuilder && navLogo) {
   const runFrameDelay = 60;
 
   const frameDelay = 90;
+  const pauseDuration = 2000;
+  const jumpDistance = 65;
+
   let jumpFrameIndex = 0;
 
   /**
@@ -70,10 +73,8 @@ if (navBuilder && navLogo) {
     const navRect = navBuilder.parentElement.getBoundingClientRect();
     const aboutRect = aboutLink.getBoundingClientRect();
 
-    const startPosition = Number.parseFloat(
-      navBuilder.dataset.position || "65",
-    );
-
+    const logoRect = navLogo.getBoundingClientRect();
+    const startPosition = logoRect.left - navRect.left + jumpDistance;
     const destination = aboutRect.left - navRect.left - 48;
 
     let position = startPosition;
@@ -91,6 +92,8 @@ if (navBuilder && navLogo) {
       if (position <= startPosition && direction === -1) {
         position = startPosition;
         clearInterval(runTimer);
+        animateReturnJump();
+        return;
       }
 
       navBuilder.src = runFrames[frameIndex];
@@ -99,6 +102,43 @@ if (navBuilder && navLogo) {
 
       frameIndex = (frameIndex + 1) % runFrames.length;
     }, runFrameDelay);
+  }
+
+  /**
+   * Jumps back into the navigation logo and restarts
+   * the patrol after a short pause.
+   */
+  function animateReturnJump() {
+    const logoRect = navLogo.getBoundingClientRect();
+    const navRect = navBuilder.parentElement.getBoundingClientRect();
+
+    const logoPosition = logoRect.left - navRect.left;
+    const startPosition = logoPosition + jumpDistance;
+
+    let frameIndex = 0;
+
+    const returnTimer = setInterval(() => {
+      const progress = frameIndex / (jumpFrames.length - 1);
+
+      const position = startPosition - progress * (jumpDistance + 45);
+      const height = Math.sin(progress * Math.PI) * 35;
+
+      navBuilder.src = jumpFrames[frameIndex];
+      navBuilder.style.transform = `translate(${position}px, ${-height}px) scaleX(-1)`;
+
+      frameIndex++;
+
+      if (frameIndex >= jumpFrames.length) {
+        clearInterval(returnTimer);
+
+        navBuilder.style.opacity = "0";
+
+        setTimeout(() => {
+          jumpFrameIndex = 0;
+          animateJump();
+        }, pauseDuration);
+      }
+    }, frameDelay);
   }
 
   /**
