@@ -195,8 +195,40 @@ if (navBuilder && navLogo) {
     animation.addEventListener("finish", () => {
       flyingText.remove();
       link.style.color = "";
-      animateCatch();
+      animateChaseJump();
     });
+  }
+
+  /**
+   * Makes the character jump toward the selected navigation
+   * section before playing the catching animation.
+   */
+  function animateChaseJump() {
+    let frameIndex = 0;
+
+    const startPosition = Number.parseFloat(navBuilder.dataset.position || "0");
+
+    const chaseDistance = 80;
+    const chaseHeight = 45;
+
+    const chaseTimer = setInterval(() => {
+      const progress = frameIndex / (jumpFrames.length - 1);
+
+      const position = startPosition + progress * chaseDistance;
+      const height = Math.sin(progress * Math.PI) * chaseHeight;
+
+      navBuilder.src = jumpFrames[frameIndex];
+      navBuilder.style.transform = `translate(${position}px, ${-height}px)`;
+
+      navBuilder.dataset.position = position;
+
+      frameIndex++;
+
+      if (frameIndex >= jumpFrames.length) {
+        clearInterval(chaseTimer);
+        animateCatch();
+      }
+    }, frameDelay);
   }
 
   /**
