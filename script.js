@@ -191,44 +191,60 @@ if (navBuilder && navLogo) {
         fill: "forwards",
       },
     );
+    animateChaseJump(flyingText, animation);
 
     animation.addEventListener("finish", () => {
       flyingText.remove();
       link.style.color = "";
-      animateChaseJump();
     });
   }
 
   /**
-   * Makes the character jump toward the selected navigation
-   * section before playing the catching animation.
+   * Makes the character follow the flying navigation text
+   * toward the selected page section before catching it.
+   *
+   * @param flyingText - The animated navigation text.
+   * @param animation - The flying text animation.
    */
-  function animateChaseJump() {
+  function animateChaseJump(flyingText, animation) {
+    const builderRect = navBuilder.getBoundingClientRect();
+
+    // Move the character into the page so it can leave the navigation bar.
+    navBuilder.style.position = "fixed";
+    navBuilder.style.left = `${builderRect.left}px`;
+    navBuilder.style.top = `${builderRect.top}px`;
+    navBuilder.style.bottom = "auto";
+    navBuilder.style.transform = "none";
+    navBuilder.style.zIndex = "1001";
+
     let frameIndex = 0;
 
-    const startPosition = Number.parseFloat(navBuilder.dataset.position || "0");
+    /**
+     * Updates the character's position while following
+     * the flying navigation text.
+     */
+    function followText() {
+      if (animation.playState === "finished") {
+        animateCatch();
+        return;
+      }
 
-    const chaseDistance = 80;
-    const chaseHeight = 45;
+      const textRect = flyingText.getBoundingClientRect();
 
-    const chaseTimer = setInterval(() => {
-      const progress = frameIndex / (jumpFrames.length - 1);
+      const progress = Math.min(animation.currentTime / 900, 1);
 
-      const position = startPosition + progress * chaseDistance;
-      const height = Math.sin(progress * Math.PI) * chaseHeight;
+      const jumpHeight = Math.sin(progress * Math.PI) * 45;
 
       navBuilder.src = jumpFrames[frameIndex];
-      navBuilder.style.transform = `translate(${position}px, ${-height}px)`;
+      navBuilder.style.left = `${textRect.left - navBuilder.offsetWidth / 2}px`;
+      navBuilder.style.top = `${textRect.top - jumpHeight}px`;
 
-      navBuilder.dataset.position = position;
+      frameIndex = (frameIndex + 1) % jumpFrames.length;
 
-      frameIndex++;
+      requestAnimationFrame(followText);
+    }
 
-      if (frameIndex >= jumpFrames.length) {
-        clearInterval(chaseTimer);
-        animateCatch();
-      }
-    }, frameDelay);
+    followText();
   }
 
   /**
