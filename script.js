@@ -67,8 +67,13 @@ if (navBuilder && navLogo) {
 
   const aboutLink = document.querySelector('.nav-links a[href="#about"]');
 
+  // Normal run speed
   const runSpeed = 15;
   const runFrameDelay = 60;
+
+  // After Clicking
+  const navigationRunSpeed = 35;
+  const navigationFrameDelay = 25;
 
   const frameDelay = 90;
   const pauseDuration = 2000;
@@ -77,6 +82,7 @@ if (navBuilder && navLogo) {
   let jumpFrameIndex = 0;
   let navigationRequested = false;
   let selectedNavLink = null;
+  let pauseTimer = null;
 
   /**
    * Detects navigation clicks and requests an interruption
@@ -86,6 +92,24 @@ if (navBuilder && navLogo) {
     link.addEventListener("click", () => {
       navigationRequested = true;
       selectedNavLink = link;
+
+      if (pauseTimer !== null) {
+        clearTimeout(pauseTimer);
+        pauseTimer = null;
+
+        navBuilder.style.opacity = "1";
+
+        const navRect = navBuilder.parentElement.getBoundingClientRect();
+        const logoRect = navLogo.getBoundingClientRect();
+
+        const startPosition = logoRect.left - navRect.left + jumpDistance;
+
+        navBuilder.dataset.position = startPosition;
+        navBuilder.style.transform = `translateX(${startPosition}px)`;
+
+        navigationRequested = false;
+        runToNavLink(link);
+      }
     });
   });
 
@@ -266,7 +290,8 @@ if (navBuilder && navLogo) {
     selectedNavLink = null;
     navigationRequested = false;
 
-    setTimeout(() => {
+    pauseTimer = setTimeout(() => {
+      pauseTimer = null;
       jumpFrameIndex = 0;
       animateJump();
     }, pauseDuration);
@@ -316,7 +341,8 @@ if (navBuilder && navLogo) {
       const direction = destination >= position ? 1 : -1;
 
       position +=
-        Math.min(runSpeed, Math.abs(destination - position)) * direction;
+        Math.min(navigationRunSpeed, Math.abs(destination - position)) *
+        direction;
 
       navBuilder.src = runFrames[frameIndex];
       navBuilder.style.transform = `translateX(${position}px) scaleX(${direction})`;
@@ -329,7 +355,7 @@ if (navBuilder && navLogo) {
         clearInterval(navigationTimer);
         animateGrab();
       }
-    }, runFrameDelay);
+    }, navigationFrameDelay);
   }
 
   /**
@@ -415,7 +441,8 @@ if (navBuilder && navLogo) {
 
         navBuilder.style.opacity = "0";
 
-        setTimeout(() => {
+        pauseTimer = setTimeout(() => {
+          pauseTimer = null;
           jumpFrameIndex = 0;
           animateJump();
         }, pauseDuration);
