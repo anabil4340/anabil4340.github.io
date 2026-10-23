@@ -60,6 +60,17 @@ if (navBuilder && navLogo) {
   const jumpDistance = 65;
 
   let jumpFrameIndex = 0;
+  let navigationRequested = false;
+
+  /**
+   * Detects navigation clicks and requests an interruption
+   * of the character's normal patrol.
+   */
+  document.querySelectorAll(".nav-links a").forEach((link) => {
+    link.addEventListener("click", () => {
+      navigationRequested = true;
+    });
+  });
 
   /**
    * Runs the character toward the About link and back
@@ -82,6 +93,11 @@ if (navBuilder && navLogo) {
     let frameIndex = 0;
 
     const runTimer = setInterval(() => {
+      if (navigationRequested) {
+        clearInterval(runTimer);
+        return;
+      }
+
       position += runSpeed * direction;
 
       if (position >= destination) {
