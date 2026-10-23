@@ -139,6 +139,8 @@ header {
 
 /* Animated navigation character */
 .nav-builder {
+  opacity: 0;
+  will-change: transform;
   position: absolute;
   left: 24px;
   bottom: 0;
