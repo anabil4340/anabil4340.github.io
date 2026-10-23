@@ -52,6 +52,8 @@ if (navBuilder && navLogo) {
 
   const grabFrames = ["sprites/grab_01.png", "sprites/grab_02.png"];
 
+  const throwFrames = ["sprites/throw_01.png", "sprites/throw_02.png"];
+
   const aboutLink = document.querySelector('.nav-links a[href="#about"]');
 
   const runSpeed = 15;
@@ -90,6 +92,31 @@ if (navBuilder && navLogo) {
 
       if (frameIndex >= grabFrames.length) {
         clearInterval(grabTimer);
+        animateThrow();
+      }
+    }, 150);
+  }
+
+  /**
+   * Plays the throwing animation and temporarily hides
+   * the selected navigation link's text.
+   */
+  function animateThrow() {
+    if (!selectedNavLink) {
+      return;
+    }
+
+    let frameIndex = 0;
+
+    const throwTimer = setInterval(() => {
+      navBuilder.src = throwFrames[frameIndex];
+
+      frameIndex++;
+
+      if (frameIndex >= throwFrames.length) {
+        clearInterval(throwTimer);
+
+        selectedNavLink.style.color = "transparent";
       }
     }, 150);
   }
