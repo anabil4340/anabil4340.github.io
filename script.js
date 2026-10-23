@@ -248,6 +248,31 @@ if (navBuilder && navLogo) {
   }
 
   /**
+   * Restores the character to the navigation bar
+   * and restarts its normal patrol cycle.
+   */
+  function restoreBuilder() {
+    navBuilder.style.opacity = "0";
+
+    navBuilder.style.position = "";
+    navBuilder.style.left = "";
+    navBuilder.style.top = "";
+    navBuilder.style.bottom = "";
+    navBuilder.style.zIndex = "";
+    navBuilder.style.transform = "";
+
+    navBuilder.dataset.position = "";
+
+    selectedNavLink = null;
+    navigationRequested = false;
+
+    setTimeout(() => {
+      jumpFrameIndex = 0;
+      animateJump();
+    }, pauseDuration);
+  }
+
+  /**
    * Plays the character's catching animation after
    * the navigation text reaches its destination.
    */
@@ -261,6 +286,7 @@ if (navBuilder && navLogo) {
 
       if (frameIndex >= catchFrames.length) {
         clearInterval(catchTimer);
+        restoreBuilder();
       }
     }, 120);
   }
