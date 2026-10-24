@@ -111,7 +111,6 @@ if (navBuilder && navLogo) {
 
       const navRect = navBuilder.parentElement.getBoundingClientRect();
 
-      // Continue from hacker's current position
       // Continue from the hacker's current visible position.
       const builderRect = navBuilder.getBoundingClientRect();
       const startPosition = builderRect.left - navRect.left;
@@ -566,6 +565,7 @@ if (navBuilder && navLogo) {
 
       if (frameIndex >= jumpFrames.length) {
         clearInterval(activePatrolTimer);
+        activePatrolTimer = null;
         navigationActive = false;
         navBuilder.style.opacity = "0";
 
