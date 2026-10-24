@@ -207,7 +207,7 @@ if (navBuilder && navLogo) {
     document.body.appendChild(flyingText);
 
     const targetX = sectionRect.left + sectionRect.width / 2;
-    const targetY = Math.max(100, sectionRect.top + 100);
+    const targetY = sectionRect.top + sectionRect.height / 2;
 
     const animation = flyingText.animate(
       [
@@ -284,6 +284,47 @@ if (navBuilder && navLogo) {
   }
 
   /**
+   * Runs the character back to the navigation logo
+   * after returning the captured navigation text.
+   */
+  function runBackToLogo() {
+    const navRect = navBuilder.parentElement.getBoundingClientRect();
+    const logoRect = navLogo.getBoundingClientRect();
+
+    const destination = logoRect.left - navRect.left + jumpDistance;
+
+    // Keep the character at its current visible position.
+    const builderRect = navBuilder.getBoundingClientRect();
+
+    navBuilder.style.position = "";
+    navBuilder.style.left = "";
+    navBuilder.style.top = "";
+    navBuilder.style.bottom = "";
+    navBuilder.style.zIndex = "";
+
+    let position = builderRect.left - navRect.left;
+    let frameIndex = 0;
+
+    navBuilder.style.transform = `translateX(${position}px) scaleX(-1)`;
+
+    const returnTimer = setInterval(() => {
+      position -= Math.min(runSpeed, Math.max(0, position - destination));
+
+      navBuilder.src = runFrames[frameIndex];
+      navBuilder.style.transform = `translateX(${position}px) scaleX(-1)`;
+
+      navBuilder.dataset.position = position;
+
+      frameIndex = (frameIndex + 1) % runFrames.length;
+
+      if (position <= destination) {
+        clearInterval(returnTimer);
+        animateReturnJump();
+      }
+    }, runFrameDelay);
+  }
+
+  /**
    * Carries the captured text back to its original
    * position in the navigation bar.
    */
@@ -351,7 +392,7 @@ if (navBuilder && navLogo) {
       } else {
         carriedText.remove();
         link.style.color = "";
-        restoreBuilder();
+        runBackToLogo();
       }
     }
 
@@ -526,7 +567,7 @@ if (navBuilder && navLogo) {
 
       if (frameIndex >= jumpFrames.length) {
         clearInterval(activePatrolTimer);
-
+        navigationActive = false;
         navBuilder.style.opacity = "0";
 
         pauseTimer = setTimeout(() => {
