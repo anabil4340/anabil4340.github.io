@@ -93,7 +93,7 @@ if (navBuilder && navLogo) {
    */
   document.querySelectorAll(".nav-links a").forEach((link) => {
     link.addEventListener("click", () => {
-      if (navigationActive) {
+      if (navigationActive && activePatrolTimer === null) {
         return;
       }
 
@@ -110,13 +110,11 @@ if (navBuilder && navLogo) {
       pauseTimer = null;
 
       const navRect = navBuilder.parentElement.getBoundingClientRect();
-      const logoRect = navLogo.getBoundingClientRect();
 
-      // Start at the current position or just outside the logo.
-      const startPosition = Number.parseFloat(
-        navBuilder.dataset.position ||
-          String(logoRect.left - navRect.left + jumpDistance),
-      );
+      // Continue from hacker's current position
+      // Continue from the hacker's current visible position.
+      const builderRect = navBuilder.getBoundingClientRect();
+      const startPosition = builderRect.left - navRect.left;
 
       navBuilder.style.opacity = "1";
       navBuilder.style.transform = `translateX(${startPosition}px)`;
@@ -307,7 +305,7 @@ if (navBuilder && navLogo) {
 
     navBuilder.style.transform = `translateX(${position}px) scaleX(-1)`;
 
-    const returnTimer = setInterval(() => {
+    activePatrolTimer = setInterval(() => {
       position -= Math.min(runSpeed, Math.max(0, position - destination));
 
       navBuilder.src = runFrames[frameIndex];
@@ -318,7 +316,8 @@ if (navBuilder && navLogo) {
       frameIndex = (frameIndex + 1) % runFrames.length;
 
       if (position <= destination) {
-        clearInterval(returnTimer);
+        clearInterval(activePatrolTimer);
+        activePatrolTimer = null;
         animateReturnJump();
       }
     }, runFrameDelay);
