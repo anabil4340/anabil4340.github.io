@@ -470,3 +470,25 @@ footer {
   background: transparent;
   color: var(--accent);
 }
+
+/* Pink glow when the mini hacker reaches a section */
+.hacker-section-glow {
+  animation: hackerSectionGlow 1.8s ease-in-out;
+}
+
+@keyframes hackerSectionGlow {
+  0% {
+    outline: 3px solid transparent;
+    outline-offset: 20px;
+  }
+
+  40% {
+    outline: 3px solid rgba(236, 72, 153, 0.8);
+    outline-offset: 20px;
+  }
+
+  100% {
+    outline: 3px solid transparent;
+    outline-offset: 20px;
+  }
+}

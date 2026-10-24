@@ -512,6 +512,15 @@ if (navBuilder && navLogo) {
    * the navigation text reaches its destination.
    */
   function animateCatch(version) {
+    const section = document.querySelector(
+      selectedNavLink?.getAttribute("href"),
+    );
+
+    if (section && version === animationVersion) {
+      section.classList.remove("hacker-section-glow");
+      section.getBoundingClientRect();
+      section.classList.add("hacker-section-glow");
+    }
     let frameIndex = 0;
 
     activeTimer = setInterval(() => {
