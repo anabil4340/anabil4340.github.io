@@ -80,12 +80,74 @@ if (navBuilder && navLogo) {
   const jumpDistance = 65;
 
   let jumpFrameIndex = 0;
-  let navigationRequested = false;
   let selectedNavLink = null;
-  let pauseTimer = null;
 
-  let activePatrolTimer = null;
-  let navigationActive = false;
+  let animationVersion = 0;
+  let activeTimer = null;
+  let activeFrame = null;
+  let activeTextAnimation = null;
+  let activeFlyingText = null;
+  let activeCarriedText = null;
+  let activeHiddenLink = null;
+
+  /**
+   * Cancels the current animation and restores any
+   * navigation text before starting a new interaction.
+   */
+  function cancelCurrentAnimation() {
+    animationVersion++;
+
+    clearTimeout(activeTimer);
+    clearInterval(activeTimer);
+    cancelAnimationFrame(activeFrame);
+
+    activeTimer = null;
+    activeFrame = null;
+
+    if (activeTextAnimation) {
+      activeTextAnimation.cancel();
+      activeTextAnimation = null;
+    }
+
+    if (activeFlyingText) {
+      activeFlyingText.remove();
+      activeFlyingText = null;
+    }
+
+    if (activeCarriedText) {
+      activeCarriedText.remove();
+      activeCarriedText = null;
+    }
+
+    if (activeHiddenLink) {
+      activeHiddenLink.style.color = "";
+      activeHiddenLink = null;
+    }
+
+    selectedNavLink = null;
+  }
+
+  /**
+   * Restores the hacker's normal navigation-bar positioning
+   * while preserving its current visible horizontal position.
+   */
+  function placeBuilderInNavbar() {
+    const builderRect = navBuilder.getBoundingClientRect();
+    const navRect = navBuilder.parentElement.getBoundingClientRect();
+
+    navBuilder.style.position = "";
+    navBuilder.style.left = "";
+    navBuilder.style.top = "";
+    navBuilder.style.bottom = "";
+    navBuilder.style.zIndex = "";
+
+    const position = builderRect.left - navRect.left - navBuilder.offsetLeft;
+
+    navBuilder.style.transform = `translateX(${position}px)`;
+    navBuilder.dataset.position = position;
+
+    return position;
+  }
 
   /**
    * Gives navigation clicks priority over the normal
@@ -93,33 +155,17 @@ if (navBuilder && navLogo) {
    */
   document.querySelectorAll(".nav-links a").forEach((link) => {
     link.addEventListener("click", () => {
-      if (navigationActive && activePatrolTimer === null) {
-        return;
-      }
+      cancelCurrentAnimation();
 
-      navigationActive = true;
+      const version = animationVersion;
+
       selectedNavLink = link;
-      navigationRequested = false;
 
-      // Stop the current patrol animation immediately.
-      clearTimeout(activePatrolTimer);
-      clearInterval(activePatrolTimer);
-      clearTimeout(pauseTimer);
-
-      activePatrolTimer = null;
-      pauseTimer = null;
-
-      const navRect = navBuilder.parentElement.getBoundingClientRect();
-
-      // Continue from the hacker's current visible position.
-      const builderRect = navBuilder.getBoundingClientRect();
-      const startPosition = builderRect.left - navRect.left;
+      placeBuilderInNavbar();
 
       navBuilder.style.opacity = "1";
-      navBuilder.style.transform = `translateX(${startPosition}px)`;
-      navBuilder.dataset.position = startPosition;
 
-      runToNavLink(link);
+      runToNavLink(link, version);
     });
   });
 
@@ -127,42 +173,53 @@ if (navBuilder && navLogo) {
    * Plays the grabbing animation when the character
    * reaches a selected navigation link.
    */
-  function animateGrab() {
+  function animateGrab(version) {
     let frameIndex = 0;
 
-    const grabTimer = setInterval(() => {
-      navBuilder.src = grabFrames[frameIndex];
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        clearInterval(activeTimer);
+        return;
+      }
 
+      navBuilder.src = grabFrames[frameIndex];
       frameIndex++;
 
       if (frameIndex >= grabFrames.length) {
-        clearInterval(grabTimer);
-        animateThrow();
+        clearInterval(activeTimer);
+        activeTimer = null;
+        animateThrow(version);
       }
     }, 150);
   }
-
   /**
    * Plays the throwing animation and temporarily hides
    * the selected navigation link's text.
    */
-  function animateThrow() {
-    if (!selectedNavLink) {
+  function animateThrow(version) {
+    if (!selectedNavLink || version !== animationVersion) {
       return;
     }
 
     let frameIndex = 0;
 
-    const throwTimer = setInterval(() => {
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        clearInterval(activeTimer);
+        return;
+      }
+
       navBuilder.src = throwFrames[frameIndex];
 
       frameIndex++;
 
       if (frameIndex >= throwFrames.length) {
-        clearInterval(throwTimer);
+        clearInterval(activeTimer);
+        activeTimer = null;
 
-        selectedNavLink.style.color = "transparent";
-        animateFlyingText();
+        activeHiddenLink = selectedNavLink;
+        activeHiddenLink.style.color = "transparent";
+        animateFlyingText(version);
       }
     }, 150);
   }
@@ -171,8 +228,8 @@ if (navBuilder && navLogo) {
    * Animates the selected navigation text toward its page section
    * and restores the original navigation link afterward.
    */
-  function animateFlyingText() {
-    if (!selectedNavLink) {
+  function animateFlyingText(version) {
+    if (!selectedNavLink || version !== animationVersion) {
       return;
     }
 
@@ -181,6 +238,8 @@ if (navBuilder && navLogo) {
 
     if (!section) {
       link.style.color = "";
+      activeHiddenLink = null;
+      restoreBuilder(version);
       return;
     }
 
@@ -202,6 +261,7 @@ if (navBuilder && navLogo) {
     });
 
     document.body.appendChild(flyingText);
+    activeFlyingText = flyingText;
 
     const targetX = sectionRect.left + sectionRect.width / 2;
     const targetY = sectionRect.top + sectionRect.height / 2;
@@ -225,10 +285,17 @@ if (navBuilder && navLogo) {
         fill: "forwards",
       },
     );
-    animateChaseJump(flyingText, animation);
+
+    activeTextAnimation = animation;
+    animateChaseJump(flyingText, animation, version);
 
     animation.addEventListener("finish", () => {
+      if (version !== animationVersion) {
+        return;
+      }
       flyingText.remove();
+      activeTextAnimation = null;
+      activeFlyingText = null;
     });
   }
 
@@ -238,8 +305,9 @@ if (navBuilder && navLogo) {
    *
    * @param flyingText - The animated navigation text.
    * @param animation - The flying text animation.
+   * @param version - The current animation version.
    */
-  function animateChaseJump(flyingText, animation) {
+  function animateChaseJump(flyingText, animation, version) {
     const builderRect = navBuilder.getBoundingClientRect();
 
     // Move the character into the page so it can leave the navigation bar.
@@ -257,14 +325,19 @@ if (navBuilder && navLogo) {
      * the flying navigation text.
      */
     function followText() {
+      if (version !== animationVersion) {
+        return;
+      }
+
       if (animation.playState === "finished") {
-        animateCatch();
+        activeFrame = null;
+        animateCatch(version);
         return;
       }
 
       const textRect = flyingText.getBoundingClientRect();
 
-      const progress = Math.min(animation.currentTime / 900, 1);
+      const progress = Math.min((animation.currentTime || 0) / 900, 1);
 
       const jumpHeight = Math.sin(progress * Math.PI) * 45;
 
@@ -274,7 +347,7 @@ if (navBuilder && navLogo) {
 
       frameIndex = (frameIndex + 1) % jumpFrames.length;
 
-      requestAnimationFrame(followText);
+      activeFrame = requestAnimationFrame(followText);
     }
 
     followText();
@@ -284,40 +357,36 @@ if (navBuilder && navLogo) {
    * Runs the character back to the navigation logo
    * after returning the captured navigation text.
    */
-  function runBackToLogo() {
+  function runBackToLogo(version) {
     const navRect = navBuilder.parentElement.getBoundingClientRect();
     const logoRect = navLogo.getBoundingClientRect();
 
     const destination = logoRect.left - navRect.left + jumpDistance;
 
     // Keep the character at its current visible position.
-    const builderRect = navBuilder.getBoundingClientRect();
-
-    navBuilder.style.position = "";
-    navBuilder.style.left = "";
-    navBuilder.style.top = "";
-    navBuilder.style.bottom = "";
-    navBuilder.style.zIndex = "";
-
-    let position = builderRect.left - navRect.left;
+    let position = placeBuilderInNavbar();
     let frameIndex = 0;
 
-    navBuilder.style.transform = `translateX(${position}px) scaleX(-1)`;
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        clearInterval(activeTimer);
+        return;
+      }
+      const direction = destination >= position ? 1 : -1;
 
-    activePatrolTimer = setInterval(() => {
-      position -= Math.min(runSpeed, Math.max(0, position - destination));
+      position +=
+        Math.min(runSpeed, Math.abs(destination - position)) * direction;
 
       navBuilder.src = runFrames[frameIndex];
-      navBuilder.style.transform = `translateX(${position}px) scaleX(-1)`;
-
+      navBuilder.style.transform = `translateX(${position}px) scaleX(${direction})`;
       navBuilder.dataset.position = position;
 
       frameIndex = (frameIndex + 1) % runFrames.length;
 
-      if (position <= destination) {
-        clearInterval(activePatrolTimer);
-        activePatrolTimer = null;
-        animateReturnJump();
+      if (position === destination) {
+        clearInterval(activeTimer);
+        activeTimer = null;
+        animateReturnJump(version);
       }
     }, runFrameDelay);
   }
@@ -326,9 +395,8 @@ if (navBuilder && navLogo) {
    * Carries the captured text back to its original
    * position in the navigation bar.
    */
-  function returnWithText() {
-    if (!selectedNavLink) {
-      restoreBuilder();
+  function returnWithText(version) {
+    if (!selectedNavLink || version !== animationVersion) {
       return;
     }
 
@@ -351,6 +419,7 @@ if (navBuilder && navLogo) {
     });
 
     document.body.appendChild(carriedText);
+    activeCarriedText = carriedText;
 
     const startX = builderRect.left;
     const startY = builderRect.top;
@@ -366,6 +435,10 @@ if (navBuilder && navLogo) {
      * toward the original navigation link.
      */
     function moveBack(timestamp) {
+      if (version !== animationVersion) {
+        return;
+      }
+
       if (startTime === null) {
         startTime = timestamp;
       }
@@ -386,22 +459,31 @@ if (navBuilder && navLogo) {
       frameIndex = (frameIndex + 1) % runFrames.length;
 
       if (progress < 1) {
-        requestAnimationFrame(moveBack);
+        activeFrame = requestAnimationFrame(moveBack);
       } else {
+        activeFrame = null;
         carriedText.remove();
+        activeCarriedText = null;
+
         link.style.color = "";
-        runBackToLogo();
+        activeHiddenLink = null;
+
+        runBackToLogo(version);
       }
     }
 
-    requestAnimationFrame(moveBack);
+    activeFrame = requestAnimationFrame(moveBack);
   }
 
   /**
    * Restores the character to the navigation bar
    * and restarts its normal patrol cycle.
    */
-  function restoreBuilder() {
+  function restoreBuilder(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
     navBuilder.style.opacity = "0";
 
     navBuilder.style.position = "";
@@ -414,13 +496,14 @@ if (navBuilder && navLogo) {
     navBuilder.dataset.position = "";
 
     selectedNavLink = null;
-    navigationRequested = false;
-    navigationActive = false;
 
-    pauseTimer = setTimeout(() => {
-      pauseTimer = null;
+    activeTimer = setTimeout(() => {
+      if (version !== animationVersion) {
+        return;
+      }
+      activeTimer = null;
       jumpFrameIndex = 0;
-      animateJump();
+      animateJump(version);
     }, pauseDuration);
   }
 
@@ -428,17 +511,22 @@ if (navBuilder && navLogo) {
    * Plays the character's catching animation after
    * the navigation text reaches its destination.
    */
-  function animateCatch() {
+  function animateCatch(version) {
     let frameIndex = 0;
 
-    const catchTimer = setInterval(() => {
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        clearInterval(activeTimer);
+        return;
+      }
       navBuilder.src = catchFrames[frameIndex];
 
       frameIndex++;
 
       if (frameIndex >= catchFrames.length) {
-        clearInterval(catchTimer);
-        returnWithText();
+        clearInterval(activeTimer);
+        activeTimer = null;
+        returnWithText(version);
       }
     }, 120);
   }
@@ -446,25 +534,26 @@ if (navBuilder && navLogo) {
   /**
    * Runs the character toward the selected navigation link.
    *
-   * @param {HTMLElement} link - The navigation link that was clicked.
+   * @param  link - The navigation link that was clicked.
+   * @param version - The current animation version.
    */
-  function runToNavLink(link) {
+  function runToNavLink(link, version) {
     const navRect = navBuilder.parentElement.getBoundingClientRect();
     const linkRect = link.getBoundingClientRect();
 
     const destination =
       linkRect.left - navRect.left - navBuilder.offsetWidth + 10;
 
-    let position = Number.parseFloat(
-      navBuilder.dataset.position ||
-        String(
-          navLogo.getBoundingClientRect().left - navRect.left + jumpDistance,
-        ),
-    );
+    let position = Number.parseFloat(navBuilder.dataset.position);
 
     let frameIndex = 0;
 
-    const navigationTimer = setInterval(() => {
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        clearInterval(activeTimer);
+        return;
+      }
+
       const direction = destination >= position ? 1 : -1;
 
       position +=
@@ -479,8 +568,9 @@ if (navBuilder && navLogo) {
       frameIndex = (frameIndex + 1) % runFrames.length;
 
       if (position === destination) {
-        clearInterval(navigationTimer);
-        animateGrab();
+        clearInterval(activeTimer);
+        activeTimer = null;
+        animateGrab(version);
       }
     }, navigationFrameDelay);
   }
@@ -489,8 +579,8 @@ if (navBuilder && navLogo) {
    * Runs the character toward the About link and back
    * to its starting position.
    */
-  function animateRun() {
-    if (!aboutLink) {
+  function animateRun(version) {
+    if (!aboutLink || version !== animationVersion) {
       return;
     }
 
@@ -505,15 +595,9 @@ if (navBuilder && navLogo) {
     let direction = 1;
     let frameIndex = 0;
 
-    activePatrolTimer = setInterval(() => {
-      if (navigationRequested) {
-        clearInterval(activePatrolTimer);
-        navigationRequested = false;
-
-        if (selectedNavLink) {
-          runToNavLink(selectedNavLink);
-        }
-
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        clearInterval(activeTimer);
         return;
       }
 
@@ -525,9 +609,9 @@ if (navBuilder && navLogo) {
       }
 
       if (position <= startPosition && direction === -1) {
-        position = startPosition;
-        clearInterval(activePatrolTimer);
-        animateReturnJump();
+        clearInterval(activeTimer);
+        activeTimer = null;
+        animateReturnJump(version);
         return;
       }
 
@@ -543,7 +627,11 @@ if (navBuilder && navLogo) {
    * Jumps back into the navigation logo and restarts
    * the patrol after a short pause.
    */
-  function animateReturnJump() {
+  function animateReturnJump(version) {
+    if (version !== animationVersion) {
+      return;
+    }
+
     const logoRect = navLogo.getBoundingClientRect();
     const navRect = navBuilder.parentElement.getBoundingClientRect();
 
@@ -552,7 +640,12 @@ if (navBuilder && navLogo) {
 
     let frameIndex = 0;
 
-    activePatrolTimer = setInterval(() => {
+    activeTimer = setInterval(() => {
+      if (version !== animationVersion) {
+        clearInterval(activeTimer);
+        return;
+      }
+
       const progress = frameIndex / (jumpFrames.length - 1);
 
       const position = startPosition - progress * (jumpDistance + 45);
@@ -564,15 +657,20 @@ if (navBuilder && navLogo) {
       frameIndex++;
 
       if (frameIndex >= jumpFrames.length) {
-        clearInterval(activePatrolTimer);
-        activePatrolTimer = null;
-        navigationActive = false;
-        navBuilder.style.opacity = "0";
+        clearInterval(activeTimer);
+        activeTimer = null;
 
-        pauseTimer = setTimeout(() => {
-          pauseTimer = null;
+        navBuilder.style.opacity = "0";
+        selectedNavLink = null;
+
+        activeTimer = setTimeout(() => {
+          if (version !== animationVersion) {
+            return;
+          }
+
+          activeTimer = null;
           jumpFrameIndex = 0;
-          animateJump();
+          animateJump(version);
         }, pauseDuration);
       }
     }, frameDelay);
@@ -582,13 +680,13 @@ if (navBuilder && navLogo) {
    * Displays the next jumping frame as the character
    * moves away from the navigation logo.
    */
-  function animateJump() {
-    if (navigationActive) {
+  function animateJump(version) {
+    if (version !== animationVersion) {
       return;
     }
 
     if (jumpFrameIndex >= jumpFrames.length) {
-      animateRun();
+      animateRun(version);
       return;
     }
 
@@ -608,11 +706,15 @@ if (navBuilder && navLogo) {
       ${-verticalMovement}px
     )`;
 
-    jumpFrameIndex++;
-    activePatrolTimer = setTimeout(animateJump, frameDelay);
-  }
+    navBuilder.dataset.position = startX + horizontalMovement;
 
+    jumpFrameIndex++;
+    activeTimer = setTimeout(() => {
+      activeTimer = null;
+      animateJump(version);
+    }, frameDelay);
+  }
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    animateJump();
+    animateJump(animationVersion);
   }
 }
